@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Product</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+</head>
+<body onload="showList()">
+<button onclick="showList()">ListProduct</button>
+<div>
+    <input id="name" type="text">
+    <button onclick="search()">search</button>
+</div>
+<button onclick="formCreateProduct()">Create</button>
+<div id="createForm"></div>
+<table border="3px" style="border: 3px chartreuse solid">
+    <tr>
+        <th>Id</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Category</th>
+        <th colspan="2">Actions</th>
+    </tr>
+    <tbody id="display">
+    <tr>
+        <td>1</td>
+        <td>2</td>
+        <td>3</td>
+        <td>4</td>
+        <td>Delete</td>
+        <td>Edit</td>
+    </tr>
+    </tbody>
+
+</table>
+<div id="editForm"></div>
+
+</body>
+<script>
+    let editForm = document.getElementById("editForm");
+    let createForm = document.getElementById("createForm");
+    let display = document.getElementById("display");
+
+    function showList() {
+        $.ajax({
+            type: "GET",
+            url: "http://localhost:8080/products",
+            success: function (data) {
+                console.log(data)
+                let str = "";
+                for (let i = 0; i < data.length; i++) {
+                    str += `    <tr>
+                    <td>${data[i].id}</td>
+                    <td>${data[i].name}</td>
+                    <td>${data[i].price}</td>
+                    <td>${data[i].category.name}</td>
+                    <td><button onclick="deleteProduct(${data[i].id})">Delete</button></td>
+                    <td><a onclick="formEditProduct(${data[i].id})">Edit</a></td>
+                </tr>`
+                }
+                display.innerHTML = str;
+            },
+            error: "loi"
+
+        });
+    }
+
+    function search() {
+        let name = document.getElementById("name").value;
+        $.ajax({
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            type: "GET",
+            //tên API
+            url: "http://localhost:8080/products/search/" + name,
+
+            //xử lý khi thành công
+            success: function (okok) {
+                console.log(okok)
+                let str = "";
+                for (let i = 0; i < okok.length; i++) {
+                    str += `    <tr>
+                    <td>${okok[i].id}</td>
+                    <td>${okok[i].name}</td>
+                    <td>${okok[i].price}</td>
+                    <td>${okok[i].category.name}</td>
+                    <td><button onclick="deleteProduct(${okok[i].id})">Delete</button></td>
+                    <td><a onclick="formEditProduct(${okok[i].id})">Edit</a></td>
+                </tr>`
+                }
+                display.innerHTML = str;
+            }
+
+        });
+        //chặn sự kiện mặc định của thẻ
+        event.preventDefault();
+    }
+
+    function deleteProduct(id) {
+        $.ajax({
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            type: "DELETE",
+            //tên API
+            url: "http://localhost:8080/products/" + id,
+            //xử lý khi thành công
+            success: showList
+
+        });
+        //chặn sự kiện mặc định của thẻ
+        event.preventDefault();
+    }
+
+    function formEditProduct(id) {
+
+        $.ajax({
+            type: "GET",
+            //tên API
+            url: "http://localhost:8080/products/" + id,
+
+            //xử lý khi thành công
+            success: function (data) {
+                $.ajax({
+                    type: "GET",
+                    //tên API
+                    url: "http://localhost:8080/categories",
+                    success: function (category) {
+                        let str = `<input type="text" id="nameP" placeholder="name" value="${data.name} ">
+<input type="number" placeholder="price" id="price" value="${data.price}">` +
+                            getCategory(category) +
+                            `<button onclick="editProduct(${data.id})">Edit</button>`
+
+
+                        editForm.innerHTML = str
+
+                    }
+                })
+
+            }
+        })
+    }
+
+    function formCreateProduct() {
+        $.ajax({
+            type: "GET",
+            //tên API
+            url: "http://localhost:8080/categories",
+            success: function (category) {
+                let str = `<input type="text" id="name1" placeholder="name" ">
+<input type="number" placeholder="price" id="price1" ">` +
+                    getCategory(category) +
+                    `<button onclick="createProduct()">Create</button>`
+                editForm.innerHTML = str
+
+            }
+        })
+
+    }
+
+
+    function editProduct(id) {
+        let name = document.getElementById("nameP").value
+        let price = document.getElementById("price").value
+        let category = document.getElementById("categoryEdit").value
+        let newProduct = {
+            name: name,
+            price: price,
+            category: {
+                id: category
+            }
+        }
+        $.ajax({
+
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            type: "PUT",
+            //tên API
+            url: "http://localhost:8080/products/" + id,
+            data: JSON.stringify(newProduct),
+            //xử lý khi thành công
+            success: function () {
+                showList()
+            }
+
+        });
+        //chặn sự kiện mặc định của thẻ
+        event.preventDefault();
+    }
+
+    function createProduct() {
+        let name = document.getElementById("name1").value
+        let price = document.getElementById("price1").value
+        let category = document.getElementById("categoryEdit").value
+        let newProduct = {
+            name: name,
+            price: price,
+            category: {
+                id: category
+            }
+        }
+        $.ajax({
+
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            type: "POST",
+            //tên API
+            url: "http://localhost:8080/products",
+            data: JSON.stringify(newProduct),
+            //xử lý khi thành công
+            success: function () {
+                showList()
+            }
+
+        });
+        //chặn sự kiện mặc định của thẻ
+        event.preventDefault();
+    }
+
+    function getCategory(category) {
+        let str2 = ""
+        for (let i = 0; i < category.length; i++) {
+            str2 += `
+    <option value="${category[i].id}">${category[i].name}</option>`
+        }
+        return `<select  id='categoryEdit'>` + str2 + `</select>`
+    }
+</script>
+</html>
